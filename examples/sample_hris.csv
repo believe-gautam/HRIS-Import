@@ -1,0 +1,9 @@
+employee_id,employee_name,email,manager_id,manager_email,department
+E100,Ada Director,ADA@example.com,,,Executive
+E110,"Grace Hopper",grace@example.com,E100,ada@example.com,Engineering
+E120,Lin Manager,lin@example.com,E100,,People
+E121,Sam Report,sam@example.com,,LIN@EXAMPLE.COM,People
+E130,Cycle One,one@example.com,E131,,Operations
+E131,Cycle Two,two@example.com,E130,,Operations
+E132,Cycle Follower,follower@example.com,E130,,Operations
+E140,Missing Manager,missing@example.com,DOES-NOT-EXIST,,Sales

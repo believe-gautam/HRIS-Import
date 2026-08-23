@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HRIS import preview</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #172033;
+            --muted: #5f6b7a;
+            --line: #dce2ea;
+            --surface: #ffffff;
+            --canvas: #f4f7fb;
+            --brand: #2456d6;
+            --brand-dark: #173b9e;
+            --danger-bg: #fff3f2;
+            --danger: #9b2c24;
+            --success-bg: #eefaf3;
+            --success: #17663b;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--canvas);
+            color: var(--ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.5;
+        }
+        main { width: min(1120px, calc(100% - 32px)); margin: 48px auto 72px; }
+        h1, h2 { line-height: 1.2; }
+        h1 { margin-bottom: 8px; font-size: clamp(1.9rem, 4vw, 2.6rem); }
+        h2 { margin: 0 0 18px; font-size: 1.2rem; }
+        p { margin-top: 0; }
+        .lede { color: var(--muted); max-width: 720px; margin-bottom: 28px; }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgb(23 32 51 / 6%);
+            margin-top: 20px;
+            padding: 24px;
+        }
+        .upload-row { display: flex; align-items: end; gap: 16px; flex-wrap: wrap; }
+        .field { flex: 1 1 480px; }
+        label { display: block; font-weight: 700; margin-bottom: 8px; }
+        input[type="file"] {
+            width: 100%;
+            border: 1px solid #aeb9c8;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fff;
+        }
+        .helptext { display: block; color: var(--muted); font-size: .9rem; margin-top: 6px; }
+        button {
+            border: 0;
+            border-radius: 8px;
+            background: var(--brand);
+            color: #fff;
+            cursor: pointer;
+            font: inherit;
+            font-weight: 700;
+            padding: 12px 20px;
+        }
+        button:hover { background: var(--brand-dark); }
+        button:focus-visible, input:focus-visible { outline: 3px solid #9bb5ff; outline-offset: 2px; }
+        .errorlist { color: var(--danger); margin: 8px 0 0; }
+        .notice { border-radius: 8px; margin-top: 20px; padding: 12px 16px; }
+        .notice.success { background: var(--success-bg); color: var(--success); }
+        .metrics { display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 12px; margin-top: 20px; }
+        .metric { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+        .metric strong { display: block; font-size: 1.8rem; line-height: 1; margin-bottom: 8px; }
+        .metric span { color: var(--muted); font-size: .9rem; }
+        .table-wrap { overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border-bottom: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; }
+        th { background: #f7f9fc; color: #3e4a5c; font-size: .85rem; text-transform: uppercase; letter-spacing: .025em; }
+        tbody tr:last-child td { border-bottom: 0; }
+        td ul { margin: 0; padding-left: 18px; }
+        .empty { color: var(--muted); margin-bottom: 0; }
+        .explanation { color: var(--muted); font-size: .94rem; margin-top: -8px; }
+        code { background: #edf1f7; border-radius: 4px; padding: 2px 5px; }
+        @media (max-width: 760px) {
+            main { margin-top: 28px; }
+            .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .card { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <header>
+        <h1>HRIS import preview</h1>
+        <p class="lede">Inspect employee identities and reporting relationships before importing them. Uploaded data is analyzed for this response only and is not saved.</p>
+    </header>
+
+    <section class="card" aria-labelledby="upload-heading">
+        <h2 id="upload-heading">Choose an export</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="upload-row">
+                <div class="field">
+                    {{ form.csv_file.label_tag }}
+                    {{ form.csv_file }}
+                    {% if form.csv_file.help_text %}<span class="helptext">{{ form.csv_file.help_text }}</span>{% endif %}
+                    {{ form.csv_file.errors }}
+                </div>
+                <button type="submit">Analyze CSV</button>
+            </div>
+        </form>
+    </section>
+
+    {% if result %}
+        <div class="notice success" role="status">Analysis complete. No employee or relationship data was persisted.</div>
+
+        <section class="metrics" aria-label="Analysis summary">
+            <div class="metric"><strong>{{ result.total_rows }}</strong><span>Source rows</span></div>
+            <div class="metric"><strong>{{ result.accepted_count }}</strong><span>Accepted employees</span></div>
+            <div class="metric"><strong>{{ result.issues|length }}</strong><span>Rows with errors</span></div>
+            <div class="metric"><strong>{{ result.roots|length }}</strong><span>Root employees</span></div>
+            <div class="metric"><strong>{{ result.cyclic_employees|length }}</strong><span>Employees in cycles</span></div>
+        </section>
+
+        <section class="card" aria-labelledby="errors-heading">
+            <h2 id="errors-heading">Row-level validation errors</h2>
+            <p class="explanation">An employee with a manager error is accepted for analysis, but does not create a reporting relationship and is not considered a root.</p>
+            {% if result.issues %}
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Source row</th><th scope="col">Problem</th></tr></thead>
+                        <tbody>
+                        {% for issue in result.issues %}
+                            <tr>
+                                <td>{{ issue.source_row }}</td>
+                                <td><ul>{% for message in issue.messages %}<li>{{ message }}</li>{% endfor %}</ul></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty">No validation errors found.</p>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="roots-heading">
+            <h2 id="roots-heading">Root employees</h2>
+            {% if result.roots %}
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Employee ID</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Department</th></tr></thead>
+                        <tbody>
+                        {% for employee in result.roots %}
+                            <tr><td>{{ employee.employee_id }}</td><td>{{ employee.employee_name|default:"—" }}</td><td>{{ employee.email }}</td><td>{{ employee.department|default:"—" }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty">No root employees found.</p>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="managers-heading">
+            <h2 id="managers-heading">Managers and direct reports</h2>
+            {% if result.managers %}
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Employee ID</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Direct reports</th></tr></thead>
+                        <tbody>
+                        {% for manager in result.managers %}
+                            <tr><td>{{ manager.employee.employee_id }}</td><td>{{ manager.employee.employee_name|default:"—" }}</td><td>{{ manager.employee.email }}</td><td>{{ manager.direct_report_count }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty">No valid reporting relationships found.</p>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="cycles-heading">
+            <h2 id="cycles-heading">Employees in reporting cycles</h2>
+            <p class="explanation">Only members of a cycle appear here; employees who report into a cycle are excluded.</p>
+            {% if result.cyclic_employees %}
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Employee ID</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Department</th></tr></thead>
+                        <tbody>
+                        {% for employee in result.cyclic_employees %}
+                            <tr><td>{{ employee.employee_id }}</td><td>{{ employee.employee_name|default:"—" }}</td><td>{{ employee.email }}</td><td>{{ employee.department|default:"—" }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty">No reporting cycles found.</p>
+            {% endif %}
+        </section>
+    {% endif %}
+</main>
+</body>
+</html>
