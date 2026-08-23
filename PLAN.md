@@ -71,6 +71,18 @@ Acceptance criteria:
 - [x] Tests include a deep, non-recursive hierarchy case.
 - [x] README includes setup, test, assumptions, limits, time, AI disclosure, and walkthrough notes.
 
+### Story 6 — Navigate large result sets
+
+As Client Success, I want to search, sort, and page through each result section so that I can inspect a large export without an unmanageably large table.
+
+Acceptance criteria:
+
+- [x] Each result section has case-insensitive search across its visible fields.
+- [x] Every column can be sorted ascending or descending with an accessible state indicator.
+- [x] Page size can be set to 10, 25, 50, or 100, with previous/next navigation and result counts.
+- [x] Only the active page is rendered into the DOM; filtered/sorted rows are reused during page navigation.
+- [x] Result JSON is safely escaped, and a 25-row fallback remains when JavaScript is unavailable.
+
 ## Implementation sequence
 
 1. [x] Read the brief and inspect repository state.
@@ -79,13 +91,15 @@ Acceptance criteria:
 4. [x] Connect the core to a minimal Django upload view and template.
 5. [x] Run checks/tests and review failure paths.
 6. [x] Complete documentation and mark the stories accepted.
+7. [x] Add searchable, sortable, paginated result tables and scale-review their behavior.
 
 ## Verification evidence
 
 - `python manage.py check`: no issues.
-- `python manage.py test`: 14 tests passed.
+- `python manage.py test`: 16 tests passed.
+- `node --check imports/static/imports/results-table.js`: passed.
 - 100,000-row linear-chain sanity check: 100,000 accepted, one root, no issues/cycles, approximately 0.57 seconds on the development machine.
-- `git diff --check`: no whitespace errors.
+- 100,000-row end-to-end Django check: HTTP 200 in approximately 0.67 seconds, with 25 of 99,999 manager rows in the fallback DOM.
 
 ## Technical design
 

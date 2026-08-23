@@ -9,7 +9,7 @@ SECRET_KEY = "development-only-hris-preview-key"
 DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
-INSTALLED_APPS = ["imports"]
+INSTALLED_APPS = ["django.contrib.staticfiles", "imports"]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
