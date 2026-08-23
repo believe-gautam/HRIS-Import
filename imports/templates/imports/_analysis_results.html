@@ -37,9 +37,7 @@
         </table>
     </div>
     <p class="empty" data-role="empty" data-empty-message="No validation errors found."{% if scan.error_count %} hidden{% endif %}>No validation errors found.</p>
-    <nav class="pagination" data-role="pagination" aria-label="Validation errors pages"{% if not scan.error_count %} hidden{% endif %}>
-        <button type="button" data-role="previous" disabled>Previous</button><span class="page-label" data-role="page-label">Page 1</span><button type="button" data-role="next" disabled>Next</button>
-    </nav>
+    {% include "imports/_table_pagination.html" with pagination_label="Validation errors pages" table_key="issues" row_count=scan.error_count page_data=initial_pages.issues %}
 </section>
 
 <section class="card" aria-labelledby="roots-heading" data-table-key="roots" data-table-endpoint="{% url 'imports:scan_table_data' scan.id 'roots' %}">
@@ -71,9 +69,7 @@
         </table>
     </div>
     <p class="empty" data-role="empty" data-empty-message="No root employees found."{% if scan.root_count %} hidden{% endif %}>No root employees found.</p>
-    <nav class="pagination" data-role="pagination" aria-label="Root employee pages"{% if not scan.root_count %} hidden{% endif %}>
-        <button type="button" data-role="previous" disabled>Previous</button><span class="page-label" data-role="page-label">Page 1</span><button type="button" data-role="next" disabled>Next</button>
-    </nav>
+    {% include "imports/_table_pagination.html" with pagination_label="Root employee pages" table_key="roots" row_count=scan.root_count page_data=initial_pages.roots %}
 </section>
 
 <section class="card" aria-labelledby="managers-heading" data-table-key="managers" data-table-endpoint="{% url 'imports:scan_table_data' scan.id 'managers' %}">
@@ -105,9 +101,7 @@
         </table>
     </div>
     <p class="empty" data-role="empty" data-empty-message="No valid reporting relationships found."{% if scan.manager_count %} hidden{% endif %}>No valid reporting relationships found.</p>
-    <nav class="pagination" data-role="pagination" aria-label="Manager pages"{% if not scan.manager_count %} hidden{% endif %}>
-        <button type="button" data-role="previous" disabled>Previous</button><span class="page-label" data-role="page-label">Page 1</span><button type="button" data-role="next" disabled>Next</button>
-    </nav>
+    {% include "imports/_table_pagination.html" with pagination_label="Manager pages" table_key="managers" row_count=scan.manager_count page_data=initial_pages.managers %}
 </section>
 
 <section class="card" aria-labelledby="cycles-heading" data-table-key="cycles" data-table-endpoint="{% url 'imports:scan_table_data' scan.id 'cycles' %}">
@@ -140,7 +134,5 @@
         </table>
     </div>
     <p class="empty" data-role="empty" data-empty-message="No reporting cycles found."{% if scan.cycle_count %} hidden{% endif %}>No reporting cycles found.</p>
-    <nav class="pagination" data-role="pagination" aria-label="Reporting cycle pages"{% if not scan.cycle_count %} hidden{% endif %}>
-        <button type="button" data-role="previous" disabled>Previous</button><span class="page-label" data-role="page-label">Page 1</span><button type="button" data-role="next" disabled>Next</button>
-    </nav>
+    {% include "imports/_table_pagination.html" with pagination_label="Reporting cycle pages" table_key="cycles" row_count=scan.cycle_count page_data=initial_pages.cycles %}
 </section>

@@ -1,0 +1,17 @@
+<nav class="pagination" data-role="pagination" aria-label="{{ pagination_label }}"{% if not row_count %} hidden{% endif %}>
+    <div class="pagination-main">
+        <button type="button" data-role="first" disabled>First</button>
+        <button type="button" data-role="previous" disabled>Previous</button>
+        <span class="page-numbers" data-role="page-numbers">
+            <button type="button" class="page-number" aria-current="page" disabled>{{ page_data.page }}</button>
+        </span>
+        <button type="button" data-role="next" disabled>Next</button>
+        <button type="button" data-role="last" disabled>Last</button>
+    </div>
+    <form class="page-jump" data-role="jump-form">
+        <span class="page-label" data-role="page-label">Page {{ page_data.page }} of {{ page_data.page_count }}</span>
+        <label for="jump-{{ table_key }}">Go to page</label>
+        <input id="jump-{{ table_key }}" type="number" min="1" max="{{ page_data.page_count }}" step="1" inputmode="numeric" data-role="jump-input" autocomplete="off">
+        <button type="submit">Go</button>
+    </form>
+</nav>

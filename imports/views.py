@@ -75,10 +75,27 @@ def _filtered_scan_history(request: HttpRequest) -> tuple[QuerySet[ImportScan], 
 def scan_history(request: HttpRequest) -> HttpResponse:
     scans, search, sort = _filtered_scan_history(request)
     page = Paginator(scans, 20).get_page(request.GET.get("page"))
+    history_pages = [
+        {
+            "number": item if isinstance(item, int) else None,
+            "label": str(item),
+            "current": item == page.number,
+        }
+        for item in page.paginator.get_elided_page_range(
+            page.number,
+            on_each_side=1,
+            on_ends=1,
+        )
+    ]
     return render(
         request,
         "imports/history.html",
-        {"page": page, "search": search, "sort": sort},
+        {
+            "history_pages": history_pages,
+            "page": page,
+            "search": search,
+            "sort": sort,
+        },
     )
 
 

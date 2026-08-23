@@ -80,6 +80,7 @@ Acceptance criteria:
 - [x] Each result section has server-side case-insensitive search across its visible fields.
 - [x] Every column can be sorted ascending or descending with an accessible state indicator.
 - [x] Page size can be set to 10, 25, 50, or 100, with previous/next navigation and result counts.
+- [x] First/Last, nearby numbered pages, and a validated Enter-enabled page jump support direct navigation.
 - [x] Only the active page is queried and rendered; the server returns at most 100 rows per request.
 - [x] Initial result JSON is safely escaped and bounded to 25 rows per category, which also serves as the JavaScript-free fallback.
 

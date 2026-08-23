@@ -58,9 +58,37 @@
         </div>
         {% if page.has_other_pages %}
             <nav class="history-pagination" aria-label="Scan history pages">
-                {% if page.has_previous %}<a class="button-link" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %}
-                <span class="page-label">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
-                {% if page.has_next %}<a class="button-link" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}
+                <div class="pagination-main">
+                    {% if page.has_previous %}
+                        <a class="button-link" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page=1">First</a>
+                        <a class="button-link" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page={{ page.previous_page_number }}">Previous</a>
+                    {% endif %}
+                    <span class="page-numbers">
+                    {% for item in history_pages %}
+                        {% if item.number %}
+                            {% if item.current %}
+                                <span class="page-number" aria-current="page">{{ item.label }}</span>
+                            {% else %}
+                                <a class="page-number" aria-label="Go to page {{ item.number }}" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page={{ item.number }}">{{ item.label }}</a>
+                            {% endif %}
+                        {% else %}
+                            <span class="page-ellipsis" aria-hidden="true">{{ item.label }}</span>
+                        {% endif %}
+                    {% endfor %}
+                    </span>
+                    {% if page.has_next %}
+                        <a class="button-link" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page={{ page.next_page_number }}">Next</a>
+                        <a class="button-link" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page={{ page.paginator.num_pages }}">Last</a>
+                    {% endif %}
+                </div>
+                <form method="get" class="page-jump">
+                    <input type="hidden" name="q" value="{{ search }}">
+                    <input type="hidden" name="sort" value="{{ sort }}">
+                    <span class="page-label">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+                    <label for="history-page-jump">Go to page</label>
+                    <input id="history-page-jump" type="number" name="page" min="1" max="{{ page.paginator.num_pages }}" step="1" inputmode="numeric" required>
+                    <button type="submit">Go</button>
+                </form>
             </nav>
         {% endif %}
     {% else %}

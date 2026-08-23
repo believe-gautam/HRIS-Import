@@ -52,7 +52,7 @@
         .filter-row .field { flex-basis: 260px; }
         .filter-row .sort-field { flex: 0 1 220px; }
         label { display: block; font-weight: 700; margin-bottom: 8px; }
-        input[type="file"], input[type="search"], select {
+        input[type="file"], input[type="search"], input[type="number"], select {
             width: 100%;
             border: 1px solid #aeb9c8;
             border-radius: 8px;
@@ -113,14 +113,25 @@
         .explanation { margin-top: -8px; }
         .metadata { display: flex; gap: 8px 24px; flex-wrap: wrap; margin-bottom: 20px; }
         .history-pagination, .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+        .pagination { justify-content: space-between; flex-wrap: wrap; }
+        .history-pagination { justify-content: space-between; flex-wrap: wrap; }
+        .pagination-main, .page-numbers, .page-jump { display: flex; align-items: center; gap: 8px; }
         .pagination button, .history-pagination .button-link { padding: 8px 13px; }
+        .page-number { background: #e8eefc; border-radius: 8px; color: var(--brand-dark); display: inline-block; min-width: 40px; padding: 8px 11px; text-align: center; text-decoration: none; }
+        .page-number:hover { background: #d7e2ff; }
+        .page-number[aria-current="page"] { background: var(--ink); color: #fff; opacity: 1; }
+        .page-ellipsis { color: var(--muted); padding: 0 2px; }
         .page-label { color: var(--muted); font-size: .9rem; min-width: 92px; text-align: center; }
+        .page-jump label { font-size: .9rem; margin: 0; white-space: nowrap; }
+        .page-jump input { padding: 8px; width: 76px; }
         [hidden] { display: none !important; }
         @media (max-width: 760px) {
             main { margin-top: 28px; }
             .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .card { padding: 18px; }
             .pagination, .history-pagination { justify-content: space-between; }
+            .pagination-main { justify-content: center; width: 100%; flex-wrap: wrap; }
+            .page-jump { justify-content: flex-end; width: 100%; }
         }
     </style>
     <script src="{% static 'imports/results-table.js' %}" defer></script>

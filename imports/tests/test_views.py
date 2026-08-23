@@ -93,7 +93,11 @@ class UploadViewTests(TestCase):
         self.assertEqual(len(response.context["initial_pages"]["roots"]["rows"]), 25)
         self.assertContains(response, 'data-role="search"', count=4)
         self.assertContains(response, 'data-role="page-size"', count=4)
+        self.assertContains(response, 'data-role="first"', count=4)
         self.assertContains(response, 'data-role="previous"', count=4)
+        self.assertContains(response, 'data-role="page-numbers"', count=4)
+        self.assertContains(response, 'data-role="jump-form"', count=4)
+        self.assertContains(response, 'data-role="last"', count=4)
         self.assertContains(response, "imports/results-table.js")
 
         # Only the first page is in the fallback HTML; JavaScript renders later pages.
@@ -114,6 +118,16 @@ class UploadViewTests(TestCase):
         self.assertEqual(page_data["page"], 2)
         self.assertEqual(len(page_data["rows"]), 10)
         self.assertEqual(page_data["rows"][0]["employee_id"], "E10")
+
+        direct_page_response = self.client.get(
+            reverse("imports:scan_table_data", args=[scan.id, "roots"]),
+            {"page": 3, "page_size": 10},
+        )
+        self.assertEqual(direct_page_response.json()["page"], 3)
+        self.assertEqual(
+            direct_page_response.json()["rows"][0]["employee_id"],
+            "E20",
+        )
 
         oversized_page_response = self.client.get(
             reverse("imports:scan_table_data", args=[scan.id, "roots"]),
@@ -140,7 +154,9 @@ class UploadViewTests(TestCase):
                 "page_size": 10,
             },
         )
-        returned_names = [row["employee_name"] for row in sort_response.json()["rows"]]
+        returned_names = [
+            row["employee_name"] for row in sort_response.json()["rows"]
+        ]
         expected_names = sorted(
             (f"Person {index}" for index in range(30)),
             reverse=True,
@@ -237,9 +253,21 @@ class UploadViewTests(TestCase):
         ]
         ImportScan.objects.bulk_create(scans)
 
-        first_page = self.client.get(reverse("imports:history"))
-        second_page = self.client.get(reverse("imports:history"), {"page": 2})
+        first_page = self.client.get(
+            reverse("imports:history"),
+            {"q": "scan", "sort": "oldest"},
+        )
+        second_page = self.client.get(
+            reverse("imports:history"),
+            {"q": "scan", "sort": "oldest", "page": 2},
+        )
 
         self.assertEqual(len(first_page.context["page"].object_list), 20)
         self.assertTrue(first_page.context["page"].has_next())
+        self.assertContains(first_page, 'id="history-page-jump"')
+        self.assertContains(first_page, 'name="q" value="scan"')
+        self.assertContains(first_page, 'name="sort" value="oldest"')
+        self.assertContains(first_page, "Go to page 2")
         self.assertEqual(len(second_page.context["page"].object_list), 1)
+        self.assertContains(second_page, "Page 2 of 2")
+        self.assertContains(second_page, ">First</a>")

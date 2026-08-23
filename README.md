@@ -90,6 +90,10 @@ The same 100,000-person result persisted 100,000 root/manager detail rows to an 
 
 Result tables use true server-side pagination. The detail page embeds only the first 25 rows of each category, and every search, sort, or page action calls a read-only JSON endpoint that returns at most the selected page size (10, 25, 50, or 100).
 
+Each table provides First/Previous/Next/Last actions, nearby numbered pages with compact ellipses, and a validated **Go to page** field. Enter submits the requested page, and navigation returns the viewport to the relevant table while honoring the browser's reduced-motion preference.
+
+Scan History uses the same direct-page controls and keeps the active filename/ID search and sort choice when moving between pages.
+
 - Browser memory and DOM work: O(p), where `p <= 100`, independent of total saved result rows.
 - Database page response memory: O(p).
 - Indexed category filtering and supported column ordering are handled by SQLite; free-text `contains` searches can still scan O(r) rows in that category but do not materialize them in the web process.
@@ -128,7 +132,7 @@ In a 100,000-person history check, the saved-scan HTML was approximately 22.4 KB
 
 ## Approximate time and AI usage
 
-Approximate AI-assisted implementation and verification time: **4.5 hours**, excluding the narrated recording. Replace this with the submitter's actual elapsed time if additional manual work is done.
+Approximate AI-assisted implementation and verification time: **5 hours**, excluding the narrated recording. Replace this with the submitter's actual elapsed time if additional manual work is done.
 
 OpenAI Codex was used to translate the brief into the delivery plan, scaffold the Django project, implement the analysis pipeline, SQLite history, and tests, and review complexity/error cases. One accepted suggestion was isolating database writes in a transactional persistence adapter so the analysis core remains pure. One changed suggestion was storing the whole result as one JSON blob: normalized detail rows were used instead so history summaries stay cheap to query and the saved categories remain explicit. No application code or employee data is sent to an external service by the running application.
 
@@ -136,7 +140,7 @@ The submitter remains responsible for reviewing every non-trivial function and n
 
 ## Suggested walkthrough outline (under 10 minutes)
 
-1. Upload `examples/sample_hris.csv`; point out the totals, valid roots/manager counts, missing-manager error, two-person cycle, and excluded cycle follower. Demonstrate search/sort/pagination and show in browser developer tools that only one result page is fetched.
+1. Upload `examples/sample_hris.csv`; point out the totals, valid roots/manager counts, missing-manager error, two-person cycle, and excluded cycle follower. Demonstrate search/sort, a numbered page, direct page jump, and show in browser developer tools that only one result page is fetched.
 2. Trace `upload_preview` into `analyze_csv`, explain the immutable stage outputs, and show that persistence happens only after analysis succeeds.
 3. Show the ID/email counters and indexes and explain why manager rows may appear in any order.
 4. Draw one path into a two-person cycle while explaining `position_in_path` and `visited`.
