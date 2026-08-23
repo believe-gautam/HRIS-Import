@@ -22,6 +22,7 @@ CSV_HEADERS = (
     "manager_email",
     "department",
 )
+MAX_SOURCE_ROWS = 250_000
 
 
 class CSVImportError(ValueError):
@@ -120,7 +121,11 @@ def _validate_headers(fieldnames: list[str] | None) -> None:
         raise CSVImportError("Invalid CSV header (" + "; ".join(problems) + ").")
 
 
-def parse_csv(stream: TextIO) -> ParsedCSV:
+def parse_csv(
+    stream: TextIO,
+    *,
+    max_rows: int = MAX_SOURCE_ROWS,
+) -> ParsedCSV:
     """Parse and normalize a CSV stream in one pass.
 
     File-level syntax/header failures raise ``CSVImportError``. A row with the
@@ -134,6 +139,11 @@ def parse_csv(stream: TextIO) -> ParsedCSV:
 
         records: list[EmployeeRecord] = []
         for raw_row in reader:
+            if len(records) >= max_rows:
+                raise CSVImportError(
+                    f"The CSV exceeds the {max_rows:,}-row safety limit. "
+                    "Split the export into smaller files."
+                )
             format_errors: list[str] = []
             if None in raw_row:
                 format_errors.append("Row has more columns than the CSV header.")

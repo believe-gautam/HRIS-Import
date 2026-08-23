@@ -1,0 +1,70 @@
+{% extends "imports/base.html" %}
+
+{% block title %}Scan history · HRIS import preview{% endblock %}
+
+{% block content %}
+<header>
+    <h1>Scan history</h1>
+    <p class="lede">Review previous successful analyses. Raw uploaded CSV files are not stored.</p>
+</header>
+
+<section class="card" aria-labelledby="history-filter-heading">
+    <h2 id="history-filter-heading">Find a scan</h2>
+    <form method="get" class="filter-row">
+        <div class="field">
+            <label for="history-search">Filename or scan ID</label>
+            <input id="history-search" type="search" name="q" value="{{ search }}" placeholder="Search saved scans">
+        </div>
+        <div class="sort-field">
+            <label for="history-sort">Sort by</label>
+            <select id="history-sort" name="sort">
+                <option value="newest"{% if sort == "newest" %} selected{% endif %}>Newest first</option>
+                <option value="oldest"{% if sort == "oldest" %} selected{% endif %}>Oldest first</option>
+                <option value="filename"{% if sort == "filename" %} selected{% endif %}>Filename</option>
+                <option value="largest"{% if sort == "largest" %} selected{% endif %}>Most source rows</option>
+                <option value="errors"{% if sort == "errors" %} selected{% endif %}>Most errors</option>
+            </select>
+        </div>
+        <button type="submit">Apply</button>
+    </form>
+</section>
+
+<section class="card" aria-labelledby="saved-scans-heading">
+    <h2 id="saved-scans-heading">Saved scans</h2>
+    {% if page.object_list %}
+        <p class="table-summary">{{ page.paginator.count }} saved scan{{ page.paginator.count|pluralize }}</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th scope="col">Scan</th><th scope="col">File</th><th scope="col">Scanned</th><th scope="col">Rows</th><th scope="col">Accepted</th><th scope="col">Errors</th><th scope="col">Roots</th><th scope="col">Managers</th><th scope="col">Cycles</th><th scope="col">Details</th></tr>
+                </thead>
+                <tbody>
+                {% for scan in page %}
+                    <tr>
+                        <td>#{{ scan.id }}</td>
+                        <td>{{ scan.original_filename }}</td>
+                        <td><time datetime="{{ scan.created_at|date:'c' }}">{{ scan.created_at|date:"Y-m-d H:i" }}</time></td>
+                        <td>{{ scan.total_rows }}</td>
+                        <td>{{ scan.accepted_count }}</td>
+                        <td>{{ scan.error_count }}</td>
+                        <td>{{ scan.root_count }}</td>
+                        <td>{{ scan.manager_count }}</td>
+                        <td>{{ scan.cycle_count }}</td>
+                        <td><a href="{% url 'imports:scan_detail' scan.id %}">View</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page.has_other_pages %}
+            <nav class="history-pagination" aria-label="Scan history pages">
+                {% if page.has_previous %}<a class="button-link" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %}
+                <span class="page-label">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}<a class="button-link" href="?q={{ search|urlencode }}&amp;sort={{ sort|urlencode }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <p class="empty">No saved scans match this search.</p>
+    {% endif %}
+</section>
+{% endblock %}

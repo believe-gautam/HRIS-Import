@@ -35,8 +35,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "hris_preview.wsgi.application"
 
-# No database is configured: each upload is analyzed in memory and discarded.
-DATABASES: dict[str, object] = {}
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -44,6 +48,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # Files larger than the in-memory threshold are transparently spooled to a temp file.
 FILE_UPLOAD_MAX_MEMORY_SIZE = 2_621_440

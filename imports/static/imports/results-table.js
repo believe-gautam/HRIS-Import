@@ -1,28 +1,12 @@
 "use strict";
 
 (() => {
-    const dataElement = document.getElementById("analysis-data");
-    if (!dataElement) {
+    const initialDataElement = document.getElementById("analysis-page-data");
+    if (!initialDataElement) {
         return;
     }
 
-    const tableData = JSON.parse(dataElement.textContent);
-    const collator = new Intl.Collator(undefined, {
-        numeric: true,
-        sensitivity: "base",
-    });
-
-    const searchableText = (row) => Object.values(row)
-        .flatMap((value) => Array.isArray(value) ? value : [value])
-        .join(" ")
-        .toLocaleLowerCase();
-
-    const comparableValue = (value) => {
-        if (Array.isArray(value)) {
-            return value.join(" ");
-        }
-        return value ?? "";
-    };
+    const initialPages = JSON.parse(initialDataElement.textContent);
 
     const renderCell = (cell, value) => {
         if (Array.isArray(value)) {
@@ -41,15 +25,9 @@
             : String(value);
     };
 
-    document.querySelectorAll("[data-table-key]").forEach((container) => {
+    document.querySelectorAll("[data-table-endpoint]").forEach((container) => {
         const tableKey = container.dataset.tableKey;
-        const rows = tableData[tableKey] ?? [];
-        const indexedRows = rows.map((row, sourceIndex) => ({
-            row,
-            sourceIndex,
-            searchText: searchableText(row),
-        }));
-
+        const endpoint = container.dataset.tableEndpoint;
         const searchInput = container.querySelector('[data-role="search"]');
         const pageSizeSelect = container.querySelector('[data-role="page-size"]');
         const body = container.querySelector('[data-role="body"]');
@@ -65,13 +43,13 @@
         );
 
         const state = {
+            abortController: null,
+            direction: "ascending",
             page: 1,
+            pageCount: 0,
             pageSize: Number(pageSizeSelect.value),
             query: "",
-            sortDirection: "ascending",
-            sortKey: null,
-            sortType: "text",
-            visibleRows: indexedRows,
+            sortKey: "",
         };
 
         const updateSortIndicators = () => {
@@ -82,46 +60,20 @@
 
                 header.setAttribute(
                     "aria-sort",
-                    active ? state.sortDirection : "none",
+                    active ? state.direction : "none",
                 );
                 indicator.textContent = active
-                    ? (state.sortDirection === "ascending" ? " ▲" : " ▼")
+                    ? (state.direction === "ascending" ? " ▲" : " ▼")
                     : "";
             });
         };
 
-        const compareRows = (left, right) => {
-            const leftValue = comparableValue(left.row[state.sortKey]);
-            const rightValue = comparableValue(right.row[state.sortKey]);
-            let comparison;
+        const displayPage = (data) => {
+            state.page = data.page || 1;
+            state.pageCount = data.page_count;
 
-            if (state.sortType === "number") {
-                comparison = Number(leftValue) - Number(rightValue);
-            } else {
-                comparison = collator.compare(String(leftValue), String(rightValue));
-            }
-
-            if (comparison !== 0 && state.sortDirection === "descending") {
-                comparison *= -1;
-            }
-            return comparison || left.sourceIndex - right.sourceIndex;
-        };
-
-        const render = () => {
-            const pageCount = Math.max(
-                1,
-                Math.ceil(state.visibleRows.length / state.pageSize),
-            );
-
-            state.page = Math.min(state.page, pageCount);
-            const firstIndex = (state.page - 1) * state.pageSize;
-            const pageRows = state.visibleRows.slice(
-                firstIndex,
-                firstIndex + state.pageSize,
-            );
             const fragment = document.createDocumentFragment();
-
-            pageRows.forEach(({ row }) => {
+            data.rows.forEach((row) => {
                 const tableRow = document.createElement("tr");
                 sortButtons.forEach((button) => {
                     const cell = document.createElement("td");
@@ -130,95 +82,121 @@
                 });
                 fragment.append(tableRow);
             });
-
             body.replaceChildren(fragment);
 
-            const hasMatches = state.visibleRows.length > 0;
-            tableWrap.hidden = !hasMatches;
-            pagination.hidden = !hasMatches;
-            emptyMessage.hidden = hasMatches;
-            emptyMessage.textContent = rows.length === 0
-                ? emptyMessage.dataset.emptyMessage
-                : "No rows match the current search.";
-
-            if (hasMatches) {
-                const firstShown = firstIndex + 1;
-                const lastShown = Math.min(
-                    firstIndex + state.pageSize,
-                    state.visibleRows.length,
-                );
-                summary.textContent = state.query
-                    ? `${firstShown}–${lastShown} of ${state.visibleRows.length} matching rows (${rows.length} total)`
-                    : `${firstShown}–${lastShown} of ${rows.length} rows`;
-                pageLabel.textContent = `Page ${state.page} of ${pageCount}`;
-            } else {
-                summary.textContent = rows.length === 0
-                    ? "0 rows"
-                    : `0 matching rows (${rows.length} total)`;
-                pageLabel.textContent = "Page 0 of 0";
-            }
-
-            previousButton.disabled = state.page <= 1;
-            nextButton.disabled = state.page >= pageCount;
+            const hasRows = data.rows.length > 0;
+            tableWrap.hidden = !hasRows;
+            pagination.hidden = !hasRows;
+            emptyMessage.hidden = hasRows;
+            emptyMessage.textContent = data.total === 0 && state.query
+                ? "No rows match the current search."
+                : emptyMessage.dataset.emptyMessage;
+            summary.textContent = hasRows
+                ? `${data.first}–${data.last} of ${data.total} rows`
+                : (state.query ? "0 matching rows" : "0 rows");
+            pageLabel.textContent = hasRows
+                ? `Page ${data.page} of ${data.page_count}`
+                : "Page 0 of 0";
+            previousButton.disabled = !hasRows || data.page <= 1;
+            nextButton.disabled = !hasRows || data.page >= data.page_count;
             updateSortIndicators();
         };
 
-        const rebuildVisibleRows = () => {
-            const matchingRows = state.query
-                ? indexedRows.filter((entry) => entry.searchText.includes(state.query))
-                : indexedRows;
-            state.visibleRows = state.sortKey
-                ? [...matchingRows].sort(compareRows)
-                : matchingRows;
-            render();
+        const displayLoadError = () => {
+            body.replaceChildren();
+            tableWrap.hidden = true;
+            pagination.hidden = true;
+            emptyMessage.hidden = false;
+            emptyMessage.textContent = "The result page could not be loaded. Please try again.";
+            summary.textContent = "Load failed";
+        };
+
+        const loadPage = async () => {
+            if (state.abortController) {
+                state.abortController.abort();
+            }
+            const abortController = new AbortController();
+            state.abortController = abortController;
+            container.setAttribute("aria-busy", "true");
+            summary.textContent = "Loading…";
+
+            const url = new URL(endpoint, window.location.origin);
+            url.searchParams.set("page", String(state.page));
+            url.searchParams.set("page_size", String(state.pageSize));
+            if (state.query) {
+                url.searchParams.set("q", state.query);
+            }
+            if (state.sortKey) {
+                url.searchParams.set("sort", state.sortKey);
+                url.searchParams.set("direction", state.direction);
+            }
+
+            try {
+                const response = await window.fetch(url, {
+                    headers: {"Accept": "application/json"},
+                    signal: abortController.signal,
+                });
+                if (!response.ok) {
+                    throw new Error(`Result request failed with ${response.status}`);
+                }
+                displayPage(await response.json());
+            } catch (error) {
+                if (error.name !== "AbortError") {
+                    displayLoadError();
+                }
+            } finally {
+                if (state.abortController === abortController) {
+                    container.removeAttribute("aria-busy");
+                }
+            }
         };
 
         let searchTimer;
         searchInput.addEventListener("input", () => {
             window.clearTimeout(searchTimer);
             searchTimer = window.setTimeout(() => {
-                state.query = searchInput.value.trim().toLocaleLowerCase();
+                state.query = searchInput.value.trim();
                 state.page = 1;
-                rebuildVisibleRows();
-            }, 150);
+                loadPage();
+            }, 250);
         });
 
         pageSizeSelect.addEventListener("change", () => {
             state.pageSize = Number(pageSizeSelect.value);
             state.page = 1;
-            render();
+            loadPage();
         });
 
         previousButton.addEventListener("click", () => {
             state.page = Math.max(1, state.page - 1);
-            render();
+            loadPage();
         });
 
         nextButton.addEventListener("click", () => {
-            state.page += 1;
-            render();
+            state.page = Math.min(state.pageCount, state.page + 1);
+            loadPage();
         });
 
         sortButtons.forEach((button) => {
             button.addEventListener("click", () => {
                 if (state.sortKey === button.dataset.sortKey) {
-                    state.sortDirection = state.sortDirection === "ascending"
+                    state.direction = state.direction === "ascending"
                         ? "descending"
                         : "ascending";
                 } else {
                     state.sortKey = button.dataset.sortKey;
-                    state.sortType = button.dataset.sortType ?? "text";
-                    state.sortDirection = "ascending";
+                    state.direction = "ascending";
                 }
                 state.page = 1;
-                rebuildVisibleRows();
+                loadPage();
             });
         });
 
-        const hasRows = rows.length > 0;
+        const initialPage = initialPages[tableKey];
+        displayPage(initialPage);
+        const hasRows = initialPage.total > 0;
         searchInput.disabled = !hasRows;
         pageSizeSelect.disabled = !hasRows;
         container.dataset.enhanced = "true";
-        rebuildVisibleRows();
     });
 })();

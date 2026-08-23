@@ -1,0 +1,146 @@
+<section class="metrics" aria-label="Analysis summary">
+    <div class="metric"><strong>{{ scan.total_rows }}</strong><span>Source rows</span></div>
+    <div class="metric"><strong>{{ scan.accepted_count }}</strong><span>Accepted employees</span></div>
+    <div class="metric"><strong>{{ scan.error_count }}</strong><span>Rows with errors</span></div>
+    <div class="metric"><strong>{{ scan.root_count }}</strong><span>Root employees</span></div>
+    <div class="metric"><strong>{{ scan.cycle_count }}</strong><span>Employees in cycles</span></div>
+</section>
+
+{{ initial_pages|json_script:"analysis-page-data" }}
+<noscript><p class="notice">Searching, sorting, and additional pages require JavaScript. The first 25 rows of each result are shown below.</p></noscript>
+
+<section class="card" aria-labelledby="errors-heading" data-table-key="issues" data-table-endpoint="{% url 'imports:scan_table_data' scan.id 'issues' %}">
+    <h2 id="errors-heading">Row-level validation errors</h2>
+    <p class="explanation">An employee with a manager error is accepted for analysis, but does not create a reporting relationship and is not considered a root.</p>
+    <div class="table-controls">
+        <div class="search-control">
+            <label for="search-issues">Search errors</label>
+            <input id="search-issues" type="search" placeholder="Source row or error message" data-role="search" autocomplete="off">
+        </div>
+        <div class="page-size-control">
+            <label for="page-size-issues">Rows per page</label>
+            <select id="page-size-issues" data-role="page-size"><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+        </div>
+    </div>
+    <p class="table-summary" data-role="summary" aria-live="polite">{{ initial_pages.issues.first }}–{{ initial_pages.issues.last }} of {{ initial_pages.issues.total }} rows</p>
+    <div class="table-wrap" data-role="table-wrap"{% if not scan.error_count %} hidden{% endif %}>
+        <table>
+            <thead><tr>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="source_row" data-sort-type="number">Source row<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="messages">Problem<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+            </tr></thead>
+            <tbody data-role="body">
+            {% for issue in initial_pages.issues.rows %}
+                <tr><td>{{ issue.source_row }}</td><td><ul>{% for message in issue.messages %}<li>{{ message }}</li>{% endfor %}</ul></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="empty" data-role="empty" data-empty-message="No validation errors found."{% if scan.error_count %} hidden{% endif %}>No validation errors found.</p>
+    <nav class="pagination" data-role="pagination" aria-label="Validation errors pages"{% if not scan.error_count %} hidden{% endif %}>
+        <button type="button" data-role="previous" disabled>Previous</button><span class="page-label" data-role="page-label">Page 1</span><button type="button" data-role="next" disabled>Next</button>
+    </nav>
+</section>
+
+<section class="card" aria-labelledby="roots-heading" data-table-key="roots" data-table-endpoint="{% url 'imports:scan_table_data' scan.id 'roots' %}">
+    <h2 id="roots-heading">Root employees</h2>
+    <div class="table-controls">
+        <div class="search-control">
+            <label for="search-roots">Search roots</label>
+            <input id="search-roots" type="search" placeholder="ID, name, email, or department" data-role="search" autocomplete="off">
+        </div>
+        <div class="page-size-control">
+            <label for="page-size-roots">Rows per page</label>
+            <select id="page-size-roots" data-role="page-size"><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+        </div>
+    </div>
+    <p class="table-summary" data-role="summary" aria-live="polite">{{ initial_pages.roots.first }}–{{ initial_pages.roots.last }} of {{ initial_pages.roots.total }} rows</p>
+    <div class="table-wrap" data-role="table-wrap"{% if not scan.root_count %} hidden{% endif %}>
+        <table>
+            <thead><tr>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="employee_id">Employee ID<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="employee_name">Name<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="email">Email<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="department">Department<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+            </tr></thead>
+            <tbody data-role="body">
+            {% for employee in initial_pages.roots.rows %}
+                <tr><td>{{ employee.employee_id }}</td><td>{{ employee.employee_name|default:"—" }}</td><td>{{ employee.email }}</td><td>{{ employee.department|default:"—" }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="empty" data-role="empty" data-empty-message="No root employees found."{% if scan.root_count %} hidden{% endif %}>No root employees found.</p>
+    <nav class="pagination" data-role="pagination" aria-label="Root employee pages"{% if not scan.root_count %} hidden{% endif %}>
+        <button type="button" data-role="previous" disabled>Previous</button><span class="page-label" data-role="page-label">Page 1</span><button type="button" data-role="next" disabled>Next</button>
+    </nav>
+</section>
+
+<section class="card" aria-labelledby="managers-heading" data-table-key="managers" data-table-endpoint="{% url 'imports:scan_table_data' scan.id 'managers' %}">
+    <h2 id="managers-heading">Managers and direct reports</h2>
+    <div class="table-controls">
+        <div class="search-control">
+            <label for="search-managers">Search managers</label>
+            <input id="search-managers" type="search" placeholder="ID, name, email, or report count" data-role="search" autocomplete="off">
+        </div>
+        <div class="page-size-control">
+            <label for="page-size-managers">Rows per page</label>
+            <select id="page-size-managers" data-role="page-size"><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+        </div>
+    </div>
+    <p class="table-summary" data-role="summary" aria-live="polite">{{ initial_pages.managers.first }}–{{ initial_pages.managers.last }} of {{ initial_pages.managers.total }} rows</p>
+    <div class="table-wrap" data-role="table-wrap"{% if not scan.manager_count %} hidden{% endif %}>
+        <table>
+            <thead><tr>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="employee_id">Employee ID<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="employee_name">Name<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="email">Email<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="direct_report_count" data-sort-type="number">Direct reports<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+            </tr></thead>
+            <tbody data-role="body">
+            {% for manager in initial_pages.managers.rows %}
+                <tr><td>{{ manager.employee_id }}</td><td>{{ manager.employee_name|default:"—" }}</td><td>{{ manager.email }}</td><td>{{ manager.direct_report_count }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="empty" data-role="empty" data-empty-message="No valid reporting relationships found."{% if scan.manager_count %} hidden{% endif %}>No valid reporting relationships found.</p>
+    <nav class="pagination" data-role="pagination" aria-label="Manager pages"{% if not scan.manager_count %} hidden{% endif %}>
+        <button type="button" data-role="previous" disabled>Previous</button><span class="page-label" data-role="page-label">Page 1</span><button type="button" data-role="next" disabled>Next</button>
+    </nav>
+</section>
+
+<section class="card" aria-labelledby="cycles-heading" data-table-key="cycles" data-table-endpoint="{% url 'imports:scan_table_data' scan.id 'cycles' %}">
+    <h2 id="cycles-heading">Employees in reporting cycles</h2>
+    <p class="explanation">Only members of a cycle appear here; employees who report into a cycle are excluded.</p>
+    <div class="table-controls">
+        <div class="search-control">
+            <label for="search-cycles">Search cycles</label>
+            <input id="search-cycles" type="search" placeholder="ID, name, email, or department" data-role="search" autocomplete="off">
+        </div>
+        <div class="page-size-control">
+            <label for="page-size-cycles">Rows per page</label>
+            <select id="page-size-cycles" data-role="page-size"><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+        </div>
+    </div>
+    <p class="table-summary" data-role="summary" aria-live="polite">{{ initial_pages.cycles.first }}–{{ initial_pages.cycles.last }} of {{ initial_pages.cycles.total }} rows</p>
+    <div class="table-wrap" data-role="table-wrap"{% if not scan.cycle_count %} hidden{% endif %}>
+        <table>
+            <thead><tr>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="employee_id">Employee ID<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="employee_name">Name<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="email">Email<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button type="button" class="sort-button" data-sort-key="department">Department<span class="sort-indicator" data-sort-indicator aria-hidden="true"></span></button></th>
+            </tr></thead>
+            <tbody data-role="body">
+            {% for employee in initial_pages.cycles.rows %}
+                <tr><td>{{ employee.employee_id }}</td><td>{{ employee.employee_name|default:"—" }}</td><td>{{ employee.email }}</td><td>{{ employee.department|default:"—" }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="empty" data-role="empty" data-empty-message="No reporting cycles found."{% if scan.cycle_count %} hidden{% endif %}>No reporting cycles found.</p>
+    <nav class="pagination" data-role="pagination" aria-label="Reporting cycle pages"{% if not scan.cycle_count %} hidden{% endif %}>
+        <button type="button" data-role="previous" disabled>Previous</button><span class="page-label" data-role="page-label">Page 1</span><button type="button" data-role="next" disabled>Next</button>
+    </nav>
+</section>

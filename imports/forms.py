@@ -7,7 +7,10 @@ MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 class HRISUploadForm(forms.Form):
     csv_file = forms.FileField(
         label="HRIS CSV file",
-        help_text="UTF-8 CSV, up to 50 MB. The file is analyzed and then discarded.",
+        help_text=(
+            "UTF-8 CSV, up to 50 MB and 250,000 rows. The raw file is discarded; "
+            "its analysis is saved to scan history."
+        ),
         widget=forms.ClearableFileInput(attrs={"accept": ".csv,text/csv"}),
     )
 

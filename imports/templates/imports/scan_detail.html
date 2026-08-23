@@ -1,0 +1,16 @@
+{% extends "imports/base.html" %}
+
+{% block title %}Scan #{{ scan.id }} · HRIS import preview{% endblock %}
+
+{% block content %}
+<header>
+    <h1>Saved scan #{{ scan.id }}</h1>
+    <p class="lede">A stored analysis of <strong>{{ scan.original_filename }}</strong>. The original CSV was not retained.</p>
+    <div class="metadata">
+        <span>Scanned <time datetime="{{ scan.created_at|date:'c' }}">{{ scan.created_at|date:"Y-m-d H:i" }}</time></span>
+        <a href="{% url 'imports:history' %}">Back to scan history</a>
+    </div>
+</header>
+
+{% include "imports/_analysis_results.html" %}
+{% endblock %}

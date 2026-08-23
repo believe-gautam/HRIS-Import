@@ -2,7 +2,7 @@ from io import StringIO
 
 from django.test import SimpleTestCase
 
-from imports.analysis import CSVImportError, analyze_csv, detect_cycle_members
+from imports.analysis import CSVImportError, analyze_csv, detect_cycle_members, parse_csv
 
 
 HEADERS = "employee_id,employee_name,email,manager_id,manager_email,department\n"
@@ -123,3 +123,13 @@ class AnalysisTests(SimpleTestCase):
     def test_rejects_malformed_csv_as_a_clear_file_error(self):
         with self.assertRaisesMessage(CSVImportError, "Malformed CSV"):
             analyze_csv(StringIO(HEADERS + 'E1,"Unclosed,e1@example.com,,,Dept\n'))
+
+    def test_rejects_rows_beyond_the_configured_safety_limit(self):
+        csv_text = HEADERS + (
+            "E1,One,one@example.com,,,People\n"
+            "E2,Two,two@example.com,,,People\n"
+            "E3,Three,three@example.com,,,People\n"
+        )
+
+        with self.assertRaisesMessage(CSVImportError, "2-row safety limit"):
+            parse_csv(StringIO(csv_text), max_rows=2)
